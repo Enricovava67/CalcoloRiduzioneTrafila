@@ -121,6 +121,39 @@ fun calcola(
     )
 }
 
+// ------------------------------------------------------------------ TRAFILATURA A BAGNO
+
+/** Come far tornare il diametro finito quando la riduzione fissa non chiude esatta. */
+enum class Aggiustamento { TUTTI, PRIMO }
+
+data class RisultatoBagno(val riduzioni: List<Double>, val passiTeorici: Double)
+
+/**
+ * Trafilatura a bagno: riduzione % uguale su tutti i passi.
+ * Calcola il numero di passi necessario (arrotondato per eccesso) e poi:
+ *  - TUTTI: ritocca leggermente la percentuale su tutti i passi per chiudere esatti al finito
+ *  - PRIMO: lascia la percentuale nominale su tutti i passi tranne il primo, che assorbe la differenza
+ */
+fun riduzioniBagno(dIn: Double, dOut: Double, ridPct: Double, agg: Aggiustamento): RisultatoBagno {
+    val lnTot = ln(areaMm2(dIn) / areaMm2(dOut))          // deformazione totale
+    val perPasso = -ln(1.0 - ridPct / 100.0)              // deformazione per passo
+    val nTeorico = lnTot / perPasso
+    val n = kotlin.math.ceil(nTeorico - 1e-9).toInt().coerceAtLeast(1)
+    if (n == 1) return RisultatoBagno(listOf(riduzionePct(dIn, dOut)), nTeorico)
+    val rid = when (agg) {
+        Aggiustamento.TUTTI -> {
+            val r = (1.0 - kotlin.math.exp(-lnTot / n)) * 100.0
+            List(n) { r }
+        }
+        Aggiustamento.PRIMO -> {
+            // dOut = d1 * sqrt(1-r)^(n-1)  =>  d1 = dOut / (1-r)^((n-1)/2)
+            val d1 = dOut / Math.pow(1.0 - ridPct / 100.0, (n - 1) / 2.0)
+            listOf(riduzionePct(dIn, d1)) + List(n - 1) { ridPct }
+        }
+    }
+    return RisultatoBagno(rid, nTeorico)
+}
+
 /** Converte una stringa con virgola o punto in Double. */
 fun String.toDoubleIt(): Double? = this.trim().replace(',', '.').toDoubleOrNull()
 
