@@ -17,6 +17,9 @@ data class Sequenza(
     val rmVergella: Double?,
     val manuale: Boolean,
     val riduzioni: List<Double>,
+    val tipo: String = "secco",          // "secco" oppure "bagno"
+    val ridFissa: Double? = null,        // solo bagno: riduzione nominale per passo
+    val aggiustaPrimo: Boolean = false,  // solo bagno: true = aggiusta solo il primo passo
     val data: Long = System.currentTimeMillis()
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
@@ -27,6 +30,9 @@ data class Sequenza(
         put("rmVergella", rmVergella ?: JSONObject.NULL)
         put("manuale", manuale)
         put("riduzioni", JSONArray(riduzioni))
+        put("tipo", tipo)
+        put("ridFissa", ridFissa ?: JSONObject.NULL)
+        put("aggiustaPrimo", aggiustaPrimo)
         put("data", data)
     }
 
@@ -42,6 +48,9 @@ data class Sequenza(
                 rmVergella = if (o.isNull("rmVergella")) null else o.getDouble("rmVergella"),
                 manuale = o.optBoolean("manuale", true),
                 riduzioni = rid,
+                tipo = o.optString("tipo", "secco"),
+                ridFissa = if (o.isNull("ridFissa")) null else o.optDouble("ridFissa"),
+                aggiustaPrimo = o.optBoolean("aggiustaPrimo", false),
                 data = o.optLong("data", System.currentTimeMillis())
             )
         }
